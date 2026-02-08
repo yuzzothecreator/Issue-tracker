@@ -12,6 +12,7 @@ import { createIssueSchema } from '@/app/validationSchema';
 import { z } from 'zod';
 import ErrorMessage from '@/app/components/ErrorMessage';
 import Spinner from '@/app/components/Spinner';
+import { on } from 'node:cluster';
 
 type IssueForm = z.infer<typeof createIssueSchema>;
 
@@ -23,20 +24,23 @@ const NewIssuePage = () => {
     const [error, setError] = useState('');
     const [isSubmitting, setSubmitting] = useState(false);
 
-  return (
-    <div className='max-w-xl'>
-        {error && <Callout.Root color="red" className='mb-5'>
-            <Callout.Text>{error}</Callout.Text>
-        </Callout.Root>}
-        <form className='max-w-xl space-y-3' onSubmit={handleSubmit(async (data) => {
+    const onSubmit = handleSubmit(async (data) => {
         try {
+            setSubmitting(true);
             await axios.post('/api/issues', data)
             router.push('/issues')
         } catch (error) {
             setSubmitting(false);
             setError('An expected error occurred while creating the issue. Please try again later. ')
         }
-    })}>
+    })
+
+  return (
+    <div className='max-w-xl'>
+        {error && <Callout.Root color="red" className='mb-5'>
+            <Callout.Text>{error}</Callout.Text>
+        </Callout.Root>}
+        <form className='max-w-xl space-y-3' onSubmit={onSubmit}>
         <TextField.Root>
             <TextField.Input placeholder='Title' {...register('title')} />
         </TextField.Root>
