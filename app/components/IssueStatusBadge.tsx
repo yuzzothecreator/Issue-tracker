@@ -15,7 +15,7 @@ const IssueStatusBadge = ({ status }: { status: Status }) => {
   const config = statusMap[status]
 
   return (
-     <Badge color="red">
+     <Badge color={statusMap[status].color} >
        {statusMap[status].label}
      </Badge>
   )
