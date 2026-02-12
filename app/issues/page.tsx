@@ -44,4 +44,5 @@ const IssuesPage = async() => {
   )
 }
 
+
 export default IssuesPage
