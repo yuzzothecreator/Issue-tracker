@@ -6,33 +6,38 @@ import EditIssueButton from './EditIssueButton'
 import IssueDetails from './IssueDetails'
 
 interface Props {
-    params: {
-        id: string
-    }
+  params: {
+    id: string
+  }
 }
 
-const IssueDetailsPage = async ({params}: Props) => {
-    // if (typeof params.id !== 'number') notFound();
+const IssueDetailsPage = async ({ params }: Props) => {
+ 
+  const issueId = Number(params.id)
 
-    const issue = await prisma.issue.findUnique({
-        where: {
-            id: parseInt(params.id)
-        }
-    })
 
-    if(!issue)
-        notFound();
+  if (!Number.isInteger(issueId)) {
+    notFound()
+  }
 
-    await delay(1000);
-    
+  const issue = await prisma.issue.findUnique({
+    where: {
+      id: issueId, 
+    },
+  })
+
+  if (!issue) notFound()
+
+  await delay(1000)
+
   return (
-    <Grid columns={{ initial: "1", lg: "2" }} gap="5"  >
-       <Box>
+    <Grid columns={{ initial: '1', lg: '2' }} gap="5">
+      <Box>
         <IssueDetails issue={issue} />
-       </Box>
-       <Box>
-            <EditIssueButton issueId={issue.id} />
-       </Box>
+      </Box>
+      <Box>
+        <EditIssueButton issueId={issue.id} />
+      </Box>
     </Grid>
   )
 }
