@@ -11,12 +11,16 @@ datasource db {
 }
 
 model Issue {
-  id          Int      @id @default(autoincrement())
-  title       String   @db.VarChar(255)
-  description String?  @db.Text
-  status      Status   @default(OPEN)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               Int      @id @default(autoincrement())
+  title            String   @db.VarChar(255)
+  description      String?  @db.Text
+  status           Status   @default(OPEN)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  assigneeToUserId String?  @db.VarChar(255)
+  assignedToUser   User?    @relation(fields: [assigneeToUserId], references: [id], onDelete: SetNull)
+
+  @@map("issues")
 }
 
 enum Status {
@@ -56,13 +60,14 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime? @map("email_verified")
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
+  id             String    @id @default(cuid())
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime? @map("email_verified")
+  image          String?
+  accounts       Account[]
+  sessions       Session[]
+  assignedIssues Issue[]
 
   @@map("users")
 }
