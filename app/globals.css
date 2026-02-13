@@ -25,3 +25,9 @@ body {
   padding: 1rem;
  
 }
+
+@layer utilities {
+  .nav-link {
+    @apply text-zinc-500 hover:text-shadow-zinc-800 transition-colors;
+  }
+}
