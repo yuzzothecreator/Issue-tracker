@@ -1,8 +1,9 @@
-import { Heading } from '@radix-ui/themes'
+import { Flex, Grid } from '@radix-ui/themes'
 import LatestIssues from './LatestIssues'
 import IssueSumary from './IssueSumary'
 import { prisma } from '@/prisma'
 import IssueChart from './IssueChart'
+
 
 export default async function Home({searchParams}: {searchParams: {page: string}}) {
   const open = await  prisma.issue.count({where: {status: 'OPEN'}})
@@ -11,8 +12,13 @@ export default async function Home({searchParams}: {searchParams: {page: string}
 
   return (
    <main>
-    <Heading color='green' >Yuzzo The Creator</Heading>
-    <IssueChart open={open} inProgress={inProgress} closed={closed}  />
+    <Grid columns={{initial: "1", md: "2"}} gap="5" >
+     <Flex direction="column" gap="5">
+       <IssueSumary open={open} inProgress={inProgress} closed={closed} />
+       <IssueChart open={open} inProgress={inProgress} closed={closed} />
+     </Flex>
+     <LatestIssues />
+    </Grid>
    </main>
   )
 }
