@@ -6,6 +6,7 @@ import { Issue, User } from "@prisma/client";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import Skeleton from "@/app/components/Skeleton";
+import toast, { Toaster } from "react-hot-toast";
 
 const AssigneeSelect = ({issue}: { issue: Issue }) => {
     const {data: users, error, isLoading} = useQuery<User[]>({
@@ -20,10 +21,13 @@ const AssigneeSelect = ({issue}: { issue: Issue }) => {
     if (error) return null; // Handle error state as needed
 
   return (
+    <>
     <Select.Root
     defaultValue={issue.assignedToUserId || ""}
      onValueChange={(userId) => {
       axios.patch(`/api/issues/${issue.id}`, { assignedToUserId: userId || null })
+        .then(() => toast.success("Assignee updated successfully"))
+        .catch(() => toast.error("Failed to update assignee"))
     }}  >
       <Select.Trigger />
       <Select.Content>
@@ -36,6 +40,9 @@ const AssigneeSelect = ({issue}: { issue: Issue }) => {
         </Select.Group>
       </Select.Content>
     </Select.Root>
+    <Toaster />
+    </>
+
   );
 };
 
