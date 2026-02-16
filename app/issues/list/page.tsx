@@ -1,92 +1,57 @@
-import prisma from '@/prisma/client';
-import { Table } from '@radix-ui/themes';
-import IssueActions from './IssueActions';
-import NextLink from 'next/link';
-import { IssueStatusBadge, Link } from '@/app/components';
-import { Issue, Status } from '@prisma/client';
-import { ArrowUpIcon } from '@radix-ui/react-icons';
-import Pagination from '@/app/components/Pagination';
+import prisma from "@/prisma/client";
+import { Flex } from "@radix-ui/themes";
+import IssueActions from "./IssueActions";
+import { Issue, Status, Prisma } from "@prisma/client";
+import Pagination from "@/app/components/Pagination";
+import IssueTable, { columnNames, IssueQuery } from "./IssueTable";
 
 interface Props {
-  searchParams: {status: Status, orderBy: keyof Issue, page: string}
-};
-
-const columns: { label: string; value: keyof Issue; className?: string }[] = [
-  { value: "title", label: "Issue" },
-  { value: "status", label: "Status", className: "hidden md:table-cell" },
-  { value: "createdAt", label: "Created", className: "hidden md:table-cell" },
-]
+  searchParams: IssueQuery;
+}
 
 const IssuesPage = async ({ searchParams }: Props) => {
   const statuses = Object.values(Status);
-  const status = statuses.includes(searchParams.status) 
-    ? searchParams.status 
-    : undefined;
-    const where = { status } 
 
-  const orderBy = columns.map(column => column.value).includes(searchParams.orderBy) 
-    ? { [searchParams.orderBy]: "asc" }
-    : undefined;
- 
-    const page = parseInt(searchParams.page) || 1;
-    const pageSize = 10;
-    // const skip = (page - 1) * pageSize;
+  const status =
+    searchParams.status &&
+    statuses.includes(searchParams.status as Status)
+      ? (searchParams.status as Status)
+      : undefined;
+
+  const where: Prisma.IssueWhereInput = status
+    ? { status }
+    : {};
+
+  const orderBy =
+    searchParams.orderBy &&
+    columnNames.includes(searchParams.orderBy as keyof Issue)
+      ? { [searchParams.orderBy]: "asc" as const }
+      : undefined;
+
+  const page = parseInt(searchParams.page ?? "1");
+  const pageSize = 10;
 
   const issues = await prisma.issue.findMany({
     where,
-    orderBy: orderBy,
+    orderBy,
     skip: (page - 1) * pageSize,
-    take: pageSize
-});
+    take: pageSize,
+  });
 
-  const itemCount = await prisma.issue.count({ where })
+  const itemCount = await prisma.issue.count({
+    where,
+  });
 
   return (
-    <div>
-      <div className='mb-5'>
-        <IssueActions />
-      </div>
-
-      <Table.Root variant='surface'>
-        <Table.Header>
-          <Table.Row>
-            {columns.map((column) => (
-              <Table.ColumnHeaderCell key={column.value} className={column.className}>
-                <NextLink href={{
-                  query: { ...searchParams, orderBy: column.value }
-                }}>{column.label}</NextLink>
-                {column.value === searchParams.orderBy && <ArrowUpIcon className='inline' />}
-              </Table.ColumnHeaderCell>
-            ))}
-           
-          </Table.Row>
-        </Table.Header>
-
-        <Table.Body>
-          {issues.map((issue: any) => (
-            <Table.Row key={issue.id}>
-              <Table.Cell>
-                <Link href={`/issues/${issue.id}`}>
-                  {issue.title}
-                </Link>
-                <div className='block md:hidden'>
-                  <IssueStatusBadge status={issue.status} />
-                </div>
-              </Table.Cell>
-
-              <Table.Cell className='hidden md:table-cell'>
-                <IssueStatusBadge status={issue.status} />
-              </Table.Cell>
-
-              <Table.Cell className='hidden md:table-cell'>
-                {issue.createdAt.toDateString()}
-              </Table.Cell>
-            </Table.Row>
-          ))}
-        </Table.Body>
-      </Table.Root>
-      <Pagination currentPage={page} itemCount={itemCount} pageSize={pageSize} />
-    </div>
+    <Flex direction="column" gap="3">
+      <IssueActions />
+      <IssueTable searchParams={searchParams} issues={issues} />
+      <Pagination
+        currentPage={page}
+        itemCount={itemCount}
+        pageSize={pageSize}
+      />
+    </Flex>
   );
 };
 
