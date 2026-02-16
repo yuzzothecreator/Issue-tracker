@@ -3,6 +3,7 @@ import LatestIssues from './LatestIssues'
 import IssueSumary from './IssueSumary'
 import { prisma } from '@/prisma'
 import IssueChart from './IssueChart'
+import { Metadata } from 'next'
 
 
 export default async function Home({searchParams}: {searchParams: {page: string}}) {
@@ -21,4 +22,10 @@ export default async function Home({searchParams}: {searchParams: {page: string}
     </Grid>
    </main>
   )
+}
+
+
+export const metadata: Metadata = {
+  title: 'Issue Tracker - Dashboard',
+  description: 'A dashboard to track issues in a project management system.',
 }
