@@ -55,7 +55,11 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 }
 
 const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  // JWT sessions don't need the adapter at request time; keep OAuth user
+  // linking available only when Google is configured.
+  ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ? { adapter: PrismaAdapter(prisma) }
+    : {}),
   providers,
   session: {
     strategy: "jwt",

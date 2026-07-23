@@ -3,25 +3,47 @@ import IssueSummary from "./IssueSummary";
 import LatestIssues from "./LatestIssues";
 import prisma from "@/prisma/client";
 import authOptions from "@/app/auth/authOptions";
-import { Callout, Flex, Grid, Heading, Text } from "@radix-ui/themes";
+import { Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import Link from "next/link";
-import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
+import { Issue, User } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-async function getIssueCounts() {
+type IssueWithAssignee = Issue & {
+  assignedToUser: User | null;
+};
+
+async function getDashboardData() {
   try {
-    const [open, inProgress, closed] = await Promise.all([
+    const [open, inProgress, closed, latest] = await Promise.all([
       prisma.issue.count({ where: { status: "OPEN" } }),
       prisma.issue.count({ where: { status: "IN_PROGRESS" } }),
       prisma.issue.count({ where: { status: "CLOSED" } }),
+      prisma.issue.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: { assignedToUser: true },
+      }),
     ]);
-    return { open, inProgress, closed, dbError: false as const };
+
+    return {
+      open,
+      inProgress,
+      closed,
+      latest: latest as IssueWithAssignee[],
+      dbError: false as const,
+    };
   } catch (error) {
     console.error("Dashboard DB error:", error);
-    return { open: 0, inProgress: 0, closed: 0, dbError: true as const };
+    return {
+      open: 0,
+      inProgress: 0,
+      closed: 0,
+      latest: [] as IssueWithAssignee[],
+      dbError: true as const,
+    };
   }
 }
 
@@ -33,23 +55,18 @@ export default async function Home() {
     console.error("Session error:", error);
   }
 
-  const { open, inProgress, closed, dbError } = await getIssueCounts();
+  const { open, inProgress, closed, latest, dbError } = await getDashboardData();
   const total = open + inProgress + closed;
   const greetingName = session?.user?.name?.split(" ")[0] || "there";
 
   return (
     <Flex direction="column" gap="6">
       {dbError && (
-        <Callout.Root color="amber">
-          <Callout.Icon>
-            <ExclamationTriangleIcon />
-          </Callout.Icon>
-          <Callout.Text>
-            Database is currently unreachable. Check your Railway MySQL service
-            and the <code>DATABASE_URL</code> in Vercel environment variables,
-            then refresh.
-          </Callout.Text>
-        </Callout.Root>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Database is currently unreachable. Check that your Railway MySQL
+          service is running and that <code>DATABASE_URL</code> in Vercel is
+          correct, then refresh this page.
+        </div>
       )}
 
       <Flex
@@ -104,7 +121,7 @@ export default async function Home() {
           <IssueSummary open={open} inProgress={inProgress} closed={closed} />
           <IssueChart open={open} inProgress={inProgress} closed={closed} />
         </Flex>
-        <LatestIssues />
+        <LatestIssues issues={latest} dbError={dbError} />
       </Grid>
     </Flex>
   );

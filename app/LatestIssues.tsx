@@ -1,5 +1,4 @@
 import { IssueStatusBadge } from "./components";
-import prisma from "@/prisma/client";
 import { Avatar, Card, Flex, Heading, Table, Text } from "@radix-ui/themes";
 import Link from "next/link";
 import { Issue, User } from "@prisma/client";
@@ -8,21 +7,13 @@ type IssueWithAssignee = Issue & {
   assignedToUser: User | null;
 };
 
-const LatestIssues = async () => {
-  let issues: IssueWithAssignee[] = [];
-  let dbError = false;
-
-  try {
-    issues = await prisma.issue.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      include: { assignedToUser: true },
-    });
-  } catch (error) {
-    console.error("LatestIssues DB error:", error);
-    dbError = true;
-  }
-
+const LatestIssues = ({
+  issues,
+  dbError = false,
+}: {
+  issues: IssueWithAssignee[];
+  dbError?: boolean;
+}) => {
   return (
     <Card className="h-full">
       <Flex justify="between" align="center" mb="4">
