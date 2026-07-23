@@ -2,13 +2,26 @@ import { IssueStatusBadge } from "./components";
 import prisma from "@/prisma/client";
 import { Avatar, Card, Flex, Heading, Table, Text } from "@radix-ui/themes";
 import Link from "next/link";
+import { Issue, User } from "@prisma/client";
+
+type IssueWithAssignee = Issue & {
+  assignedToUser: User | null;
+};
 
 const LatestIssues = async () => {
-  const issues = await prisma.issue.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 5,
-    include: { assignedToUser: true },
-  });
+  let issues: IssueWithAssignee[] = [];
+  let dbError = false;
+
+  try {
+    issues = await prisma.issue.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      include: { assignedToUser: true },
+    });
+  } catch (error) {
+    console.error("LatestIssues DB error:", error);
+    dbError = true;
+  }
 
   return (
     <Card className="h-full">
@@ -22,7 +35,20 @@ const LatestIssues = async () => {
         </Link>
       </Flex>
 
-      {issues.length === 0 ? (
+      {dbError ? (
+        <Flex
+          direction="column"
+          align="center"
+          justify="center"
+          gap="2"
+          className="min-h-[16rem] rounded-md bg-[var(--gray-2)] px-4 text-center"
+        >
+          <Text weight="medium">Could not load issues</Text>
+          <Text size="2" color="gray">
+            Database connection failed. Please try again later.
+          </Text>
+        </Flex>
+      ) : issues.length === 0 ? (
         <Flex
           direction="column"
           align="center"
