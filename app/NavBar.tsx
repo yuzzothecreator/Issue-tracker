@@ -1,12 +1,6 @@
 "use client";
 
 import { Skeleton } from "@/app/components";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import React from "react";
-import { AiFillBug } from "react-icons/ai";
-import classnames from "classnames";
-import { useSession } from "next-auth/react";
 import {
   Avatar,
   Box,
@@ -15,15 +9,21 @@ import {
   Flex,
   Text,
 } from "@radix-ui/themes";
+import classnames from "classnames";
+import { signOut, useSession } from "next-auth/react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { AiFillBug } from "react-icons/ai";
 
 const NavBar = () => {
   return (
-    <nav className="border-b mb-5 px-5 py-3">
+    <nav className="sticky top-0 z-50 border-b border-[var(--gray-5)] bg-[var(--color-background)]/95 backdrop-blur">
       <Container>
-        <Flex justify="between">
-          <Flex align="center" gap="3">
-            <Link href="/">
-              <AiFillBug />
+        <Flex justify="between" align="center" className="px-1 py-3">
+          <Flex align="center" gap="5">
+            <Link href="/" className="flex items-center gap-2 font-semibold text-[var(--accent-11)]">
+              <AiFillBug size={22} />
+              <span className="hidden sm:inline">Issue Tracker</span>
             </Link>
             <NavLinks />
           </Flex>
@@ -43,20 +43,32 @@ const NavLinks = () => {
   ];
 
   return (
-    <ul className="flex space-x-6">
-      {links.map((link) => (
-        <li key={link.href}>
-          <Link
-            className={classnames({
-              "nav-link": true,
-              "!text-zinc-900": link.href === currentPath,
-            })}
-            href={link.href}
-          >
-            {link.label}
-          </Link>
-        </li>
-      ))}
+    <ul className="flex items-center gap-1 sm:gap-2">
+      {links.map((link) => {
+        const active =
+          link.href === "/"
+            ? currentPath === "/"
+            : currentPath.startsWith(link.href);
+
+        return (
+          <li key={link.href}>
+            <Link
+              className={classnames(
+                "rounded-md px-3 py-1.5 text-sm transition-colors",
+                {
+                  "bg-[var(--accent-3)] font-medium text-[var(--accent-11)]":
+                    active,
+                  "text-zinc-500 hover:bg-[var(--gray-3)] hover:text-zinc-800":
+                    !active,
+                }
+              )}
+              href={link.href}
+            >
+              {link.label}
+            </Link>
+          </li>
+        );
+      })}
     </ul>
   );
 };
@@ -64,34 +76,69 @@ const NavLinks = () => {
 const AuthStatus = () => {
   const { status, data: session } = useSession();
 
-  if (status === "loading") return <Skeleton width="3rem" />;
+  if (status === "loading") return <Skeleton width="3rem" height="2rem" />;
 
-  if (status === "unauthenticated")
+  if (status === "unauthenticated") {
     return (
-      <Link className="nav-link" href="/api/auth/signin">
-        Login
+      <Link
+        href="/auth/signin"
+        className="inline-flex h-8 items-center rounded-md bg-[var(--accent-9)] px-3 text-sm font-medium text-white hover:bg-[var(--accent-10)]"
+      >
+        Sign in
       </Link>
     );
+  }
+
+  const name = session?.user?.name || "Account";
+  const email = session?.user?.email || "";
+  const initials = name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <Box>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
-          <Avatar
-            src={session!.user!.image!}
-            fallback="?"
-            size="2"
-            radius="full"
-            className="cursor-pointer"
-            referrerPolicy="no-referrer"
-          />
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-8)]"
+            aria-label="Open account menu"
+          >
+            <Avatar
+              src={session?.user?.image || undefined}
+              fallback={initials || "?"}
+              size="2"
+              radius="full"
+              className="cursor-pointer"
+              referrerPolicy="no-referrer"
+            />
+            <Text size="2" className="hidden md:inline max-w-[10rem] truncate">
+              {name}
+            </Text>
+          </button>
         </DropdownMenu.Trigger>
-        <DropdownMenu.Content>
+        <DropdownMenu.Content align="end" className="min-w-[12rem]">
           <DropdownMenu.Label>
-            <Text size="2">{session!.user!.email}</Text>
+            <Flex direction="column" gap="1">
+              <Text size="2" weight="medium">
+                {name}
+              </Text>
+              {email && (
+                <Text size="1" color="gray">
+                  {email}
+                </Text>
+              )}
+            </Flex>
           </DropdownMenu.Label>
-          <DropdownMenu.Item>
-            <Link href="/api/auth/signout">Log out</Link>
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item
+            color="red"
+            onSelect={() => signOut({ callbackUrl: "/" })}
+          >
+            Sign out
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root>

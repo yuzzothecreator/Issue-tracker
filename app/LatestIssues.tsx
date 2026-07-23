@@ -1,45 +1,82 @@
-import { prisma } from '@/prisma'
-import { Avatar, Card, Flex, Heading, Table } from '@radix-ui/themes'
-import Link from 'next/link'
-import React from 'react'
-import { IssueStatusBadge } from './components'
+import { IssueStatusBadge } from "./components";
+import prisma from "@/prisma/client";
+import { Avatar, Card, Flex, Heading, Table, Text } from "@radix-ui/themes";
+import Link from "next/link";
 
 const LatestIssues = async () => {
-    const issues = await prisma.issue.findMany({
-        orderBy: {
-            createdAt: 'desc'
-        },
-        take: 5,
-        include: {
-            assignedToUser: true
-        }
-    })
+  const issues = await prisma.issue.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    include: { assignedToUser: true },
+  });
 
   return (
-    <Card>
-        <Heading size='4' mb='5'>Latest Issues</Heading>
-        <Table.Root>
-        <Table.Body>
-            {issues.map(issue => (
-                <Table.Row key={issue.id}>
-                    <Table.Cell>
-                        <Flex justify="between" >
-                            <Flex direction='column' align="start" gap='2'>
-                                <Link href={`/issues/${issue.id}`}>{issue.title}</Link>
-                                <IssueStatusBadge status={issue.status} />
-                            </Flex>
-                        </Flex>
-                        {issue.assignedToUserId && (
-                            <Avatar src={issue.assignedToUser?.image!}
-                            fallback="?" size="2" radius='full' />
-                        )}
-                    </Table.Cell>
-                </Table.Row>
-            ))}
-        </Table.Body>
-    </Table.Root>
-    </Card>
-  )
-}
+    <Card className="h-full">
+      <Flex justify="between" align="center" mb="4">
+        <Heading size="4">Latest issues</Heading>
+        <Link
+          href="/issues/list"
+          className="text-sm text-[var(--accent-11)] hover:underline"
+        >
+          View all
+        </Link>
+      </Flex>
 
-export default LatestIssues
+      {issues.length === 0 ? (
+        <Flex
+          direction="column"
+          align="center"
+          justify="center"
+          gap="2"
+          className="min-h-[16rem] rounded-md bg-[var(--gray-2)] px-4 text-center"
+        >
+          <Text weight="medium">No issues yet</Text>
+          <Text size="2" color="gray">
+            Create your first issue to start tracking work.
+          </Text>
+          <Link
+            href="/issues/new"
+            className="mt-2 text-sm font-medium text-[var(--accent-11)] hover:underline"
+          >
+            New issue →
+          </Link>
+        </Flex>
+      ) : (
+        <Table.Root>
+          <Table.Body>
+            {issues.map((issue) => (
+              <Table.Row key={issue.id}>
+                <Table.Cell>
+                  <Flex justify="between" align="center" gap="3">
+                    <Flex direction="column" align="start" gap="2">
+                      <Link
+                        href={`/issues/${issue.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {issue.title}
+                      </Link>
+                      <IssueStatusBadge status={issue.status} />
+                    </Flex>
+                    {issue.assignedToUser && (
+                      <Avatar
+                        src={issue.assignedToUser.image || undefined}
+                        fallback={
+                          issue.assignedToUser.name?.[0]?.toUpperCase() || "?"
+                        }
+                        size="2"
+                        radius="full"
+                        title={issue.assignedToUser.name || "Assignee"}
+                      />
+                    )}
+                  </Flex>
+                </Table.Cell>
+              </Table.Row>
+            ))}
+          </Table.Body>
+        </Table.Root>
+      )}
+    </Card>
+  );
+};
+
+export default LatestIssues;
