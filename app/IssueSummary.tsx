@@ -27,14 +27,14 @@ const IssueSummary = ({ open, inProgress, closed }: Props) => {
       label: "In Progress",
       value: inProgress,
       status: "IN_PROGRESS",
-      tone: "bg-violet-50 border-violet-100 text-violet-700",
+      tone: "bg-fuchsia-50 border-fuchsia-100 text-fuchsia-700",
       hint: "Actively worked",
     },
     {
       label: "Closed",
       value: closed,
       status: "CLOSED",
-      tone: "bg-emerald-50 border-emerald-100 text-emerald-700",
+      tone: "bg-purple-50 border-purple-100 text-purple-700",
       hint: "Resolved",
     },
   ];

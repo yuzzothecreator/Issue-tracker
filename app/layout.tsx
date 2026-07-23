@@ -2,15 +2,15 @@ import "@radix-ui/themes/styles.css";
 import "./theme-config.css";
 import "./globals.css";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { Container, Theme } from "@radix-ui/themes";
 import NavBar from "./NavBar";
 import AuthProvider from "./auth/Provider";
 import QueryClientProvider from "./QueryClientProvider";
 
-const inter = Inter({
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-jakarta",
 });
 
 export const metadata: Metadata = {
@@ -28,10 +28,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.variable}>
+      <body className={`${jakarta.variable} font-sans`}>
         <QueryClientProvider>
           <AuthProvider>
-            <Theme appearance="light" accentColor="jade" radius="large">
+            <Theme appearance="light" accentColor="purple" radius="large">
               <NavBar />
               <main className="px-4 py-6 sm:px-5">
                 <Container size="4">{children}</Container>

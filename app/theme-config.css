@@ -1,3 +1,5 @@
+.radix-themes,
 .radix-theme {
-    --default-font-family: var(--font-inter);
-    }
+  --default-font-family: var(--font-jakarta), "Segoe UI", sans-serif;
+  --heading-font-family: var(--font-jakarta), "Segoe UI", sans-serif;
+}

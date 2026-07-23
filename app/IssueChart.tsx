@@ -21,8 +21,8 @@ interface Props {
 const IssueChart = ({ open, inProgress, closed }: Props) => {
   const data = [
     { label: "Open", value: open, fill: "#e5484d" },
-    { label: "In Progress", value: inProgress, fill: "#8e4ec6" },
-    { label: "Closed", value: closed, fill: "#30a46c" },
+    { label: "In Progress", value: inProgress, fill: "#ab4aba" },
+    { label: "Closed", value: closed, fill: "#8e4ec6" },
   ];
 
   const total = open + inProgress + closed;
