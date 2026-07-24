@@ -1,11 +1,35 @@
-import React from 'react'
+import classnames from "classnames";
 
-const Spinner = () => {
+type SpinnerSize = "sm" | "md" | "lg";
+
+const sizeClasses: Record<SpinnerSize, string> = {
+  sm: "h-3.5 w-3.5 border-2",
+  md: "h-4 w-4 border-2",
+  lg: "h-8 w-8 border-[3px]",
+};
+
+const Spinner = ({
+  size = "md",
+  className,
+  label = "Loading...",
+}: {
+  size?: SpinnerSize;
+  className?: string;
+  label?: string;
+}) => {
   return (
-    <div className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-e-transparent align-[-0.125em] text-surface motion-reduce:animate-[spin_1.5s_linear_infinite] dark:text-white" role="status">
-        <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
-    </div>
-  )
-}
+    <span
+      className={classnames(
+        "inline-block animate-spin rounded-full border-solid border-current border-r-transparent align-[-0.125em]",
+        sizeClasses[size],
+        className
+      )}
+      role="status"
+      aria-label={label}
+    >
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+};
 
-export default Spinner
+export default Spinner;

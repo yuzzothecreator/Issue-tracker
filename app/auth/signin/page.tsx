@@ -11,6 +11,7 @@ import {
   TextField,
 } from "@radix-ui/themes";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
+import { Spinner } from "@/app/components";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -23,7 +24,8 @@ const errorMessages: Record<string, string> = {
     "This email is already used with another sign-in method.",
   OAuthSignin: "Could not start Google sign-in. Check Google OAuth settings.",
   OAuthCallback: "Google sign-in failed during callback. Check redirect URIs.",
-  Configuration: "Auth configuration is incomplete. Check environment variables.",
+  Configuration:
+    "Auth configuration is incomplete. Check environment variables.",
   AccessDenied: "Access was denied.",
   Default: "Sign in failed. Please try again.",
 };
@@ -40,6 +42,7 @@ function SignInForm() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [providersLoading, setProvidersLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/auth/providers")
@@ -47,7 +50,8 @@ function SignInForm() {
       .then((providers) => {
         setGoogleEnabled(Boolean(providers?.google));
       })
-      .catch(() => setGoogleEnabled(false));
+      .catch(() => setGoogleEnabled(false))
+      .finally(() => setProvidersLoading(false));
   }, []);
 
   useEffect(() => {
@@ -60,22 +64,24 @@ function SignInForm() {
     setError("");
     setLoading(true);
 
-    const result = await signIn("credentials", {
-      email: email.trim(),
-      password,
-      redirect: false,
-      callbackUrl,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email: email.trim(),
+        password,
+        redirect: false,
+        callbackUrl,
+      });
 
-    setLoading(false);
+      if (result?.error) {
+        setError("Invalid email or password.");
+        return;
+      }
 
-    if (result?.error) {
-      setError("Invalid email or password.");
-      return;
+      router.push(result?.url || callbackUrl);
+      router.refresh();
+    } finally {
+      setLoading(false);
     }
-
-    router.push(result?.url || callbackUrl);
-    router.refresh();
   };
 
   const onGoogleSignIn = async () => {
@@ -83,6 +89,8 @@ function SignInForm() {
     setGoogleLoading(true);
     await signIn("google", { callbackUrl });
   };
+
+  const busy = loading || googleLoading;
 
   return (
     <Card size="3" className="w-full max-w-md shadow-sm">
@@ -110,29 +118,44 @@ function SignInForm() {
           </Callout.Root>
         )}
 
-        {googleEnabled && (
-          <>
-            <Button
-              type="button"
-              size="3"
-              variant="outline"
-              disabled={googleLoading || loading}
-              onClick={onGoogleSignIn}
-            >
-              <Flex align="center" gap="2">
-                <FcGoogle size={18} />
-                {googleLoading ? "Redirecting to Google..." : "Continue with Google"}
-              </Flex>
-            </Button>
+        {providersLoading ? (
+          <Flex align="center" justify="center" gap="2" className="py-2">
+            <Spinner className="text-[var(--accent-9)]" />
+            <Text size="2" color="gray">
+              Preparing sign-in options...
+            </Text>
+          </Flex>
+        ) : (
+          googleEnabled && (
+            <>
+              <Button
+                type="button"
+                size="3"
+                variant="outline"
+                disabled={busy}
+                onClick={onGoogleSignIn}
+              >
+                <Flex align="center" gap="2">
+                  {googleLoading ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <FcGoogle size={18} />
+                  )}
+                  {googleLoading
+                    ? "Redirecting to Google..."
+                    : "Continue with Google"}
+                </Flex>
+              </Button>
 
-            <Flex align="center" gap="3">
-              <Box className="h-px flex-1 bg-[var(--gray-5)]" />
-              <Text size="1" color="gray">
-                or
-              </Text>
-              <Box className="h-px flex-1 bg-[var(--gray-5)]" />
-            </Flex>
-          </>
+              <Flex align="center" gap="3">
+                <Box className="h-px flex-1 bg-[var(--gray-5)]" />
+                <Text size="1" color="gray">
+                  or
+                </Text>
+                <Box className="h-px flex-1 bg-[var(--gray-5)]" />
+              </Flex>
+            </>
+          )
         )}
 
         <form onSubmit={onSubmit}>
@@ -147,6 +170,7 @@ function SignInForm() {
                   name="email"
                   autoComplete="email"
                   required
+                  disabled={busy}
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="you@company.com"
@@ -164,6 +188,7 @@ function SignInForm() {
                   name="password"
                   autoComplete="current-password"
                   required
+                  disabled={busy}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="Enter your password"
@@ -171,14 +196,17 @@ function SignInForm() {
               </TextField.Root>
             </label>
 
-            <Button type="submit" size="3" disabled={loading || googleLoading}>
-              {loading ? "Signing in..." : "Sign in with email"}
+            <Button type="submit" size="3" disabled={busy || providersLoading}>
+              <Flex align="center" gap="2">
+                {loading && <Spinner size="sm" />}
+                {loading ? "Signing in..." : "Sign in with email"}
+              </Flex>
             </Button>
           </Flex>
         </form>
 
-        {!googleEnabled && (
-          <Box className="rounded-md bg-amber-50 border border-amber-200 p-3">
+        {!providersLoading && !googleEnabled && (
+          <Box className="rounded-md border border-amber-200 bg-amber-50 p-3">
             <Text size="1" className="text-amber-900">
               Google sign-in is not configured yet. Add{" "}
               <strong>GOOGLE_CLIENT_ID</strong> and{" "}
@@ -203,7 +231,10 @@ export default function SignInPage() {
       <Suspense
         fallback={
           <Card size="3" className="w-full max-w-md">
-            <Text color="gray">Loading sign in...</Text>
+            <Flex align="center" justify="center" gap="2" className="py-8">
+              <Spinner className="text-[var(--accent-9)]" />
+              <Text color="gray">Loading sign in...</Text>
+            </Flex>
           </Card>
         }
       >

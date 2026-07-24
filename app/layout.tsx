@@ -4,9 +4,11 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Container, Theme } from "@radix-ui/themes";
+import { Suspense } from "react";
 import NavBar from "./NavBar";
 import AuthProvider from "./auth/Provider";
 import QueryClientProvider from "./QueryClientProvider";
+import { NavigationProgress } from "./components";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -32,6 +34,9 @@ export default function RootLayout({
         <QueryClientProvider>
           <AuthProvider>
             <Theme appearance="light" accentColor="purple" radius="large">
+              <Suspense fallback={null}>
+                <NavigationProgress />
+              </Suspense>
               <NavBar />
               <main className="px-4 py-6 sm:px-5">
                 <Container size="4">{children}</Container>

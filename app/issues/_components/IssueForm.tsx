@@ -86,8 +86,16 @@ const IssueForm = ({ issue }: Props) => {
         <ErrorMessage>{errors.description?.message}</ErrorMessage>
 
         <Button disabled={isSubmitting}>
-          {issue ? 'Update Issue' : 'Submit New Issue'}
-          {isSubmitting && <Spinner />}
+          <span className="inline-flex items-center gap-2">
+            {isSubmitting && <Spinner />}
+            {isSubmitting
+              ? issue
+                ? "Updating..."
+                : "Submitting..."
+              : issue
+                ? "Update Issue"
+                : "Submit New Issue"}
+          </span>
         </Button>
       </form>
     </div>

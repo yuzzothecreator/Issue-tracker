@@ -1,6 +1,6 @@
 "use client";
 
-import { Skeleton } from "@/app/components";
+import { Spinner } from "@/app/components";
 import {
   Avatar,
   Box,
@@ -13,6 +13,7 @@ import classnames from "classnames";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { AiFillBug } from "react-icons/ai";
 
 const NavBar = () => {
@@ -21,7 +22,10 @@ const NavBar = () => {
       <Container>
         <Flex justify="between" align="center" className="px-1 py-3">
           <Flex align="center" gap="5">
-            <Link href="/" className="flex items-center gap-2 font-semibold text-[var(--accent-11)]">
+            <Link
+              href="/"
+              className="flex items-center gap-2 font-semibold text-[var(--accent-11)]"
+            >
               <AiFillBug size={22} />
               <span className="hidden sm:inline">Issue Tracker</span>
             </Link>
@@ -75,8 +79,18 @@ const NavLinks = () => {
 
 const AuthStatus = () => {
   const { status, data: session } = useSession();
+  const [signingOut, setSigningOut] = useState(false);
 
-  if (status === "loading") return <Skeleton width="3rem" height="2rem" />;
+  if (status === "loading") {
+    return (
+      <Flex align="center" gap="2" className="h-8 px-2">
+        <Spinner size="sm" className="text-[var(--accent-9)]" />
+        <Text size="1" color="gray" className="hidden sm:inline">
+          Loading...
+        </Text>
+      </Flex>
+    );
+  }
 
   if (status === "unauthenticated") {
     return (
@@ -136,9 +150,17 @@ const AuthStatus = () => {
           <DropdownMenu.Separator />
           <DropdownMenu.Item
             color="red"
-            onSelect={() => signOut({ callbackUrl: "/" })}
+            disabled={signingOut}
+            onSelect={async (event) => {
+              event.preventDefault();
+              setSigningOut(true);
+              await signOut({ callbackUrl: "/" });
+            }}
           >
-            Sign out
+            <Flex align="center" gap="2">
+              {signingOut && <Spinner size="sm" />}
+              {signingOut ? "Signing out..." : "Sign out"}
+            </Flex>
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root>
