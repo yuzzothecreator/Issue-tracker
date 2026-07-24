@@ -14,8 +14,19 @@ import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { AiFillBug } from "react-icons/ai";
+import { FcGoogle } from "react-icons/fc";
+
+const errorMessages: Record<string, string> = {
+  OAuthAccountNotLinked:
+    "This email is already used with another sign-in method.",
+  OAuthSignin: "Could not start Google sign-in. Check Google OAuth settings.",
+  OAuthCallback: "Google sign-in failed during callback. Check redirect URIs.",
+  Configuration: "Auth configuration is incomplete. Check environment variables.",
+  AccessDenied: "Access was denied.",
+  Default: "Sign in failed. Please try again.",
+};
 
 function SignInForm() {
   const router = useRouter();
@@ -23,12 +34,26 @@ function SignInForm() {
   const callbackUrl = searchParams.get("callbackUrl") || "/";
   const authError = searchParams.get("error");
 
-  const [email, setEmail] = useState("admin@issue-tracker.dev");
-  const [password, setPassword] = useState("password123");
-  const [error, setError] = useState(
-    authError ? "Sign in failed. Please try again." : ""
-  );
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/providers")
+      .then((res) => res.json())
+      .then((providers) => {
+        setGoogleEnabled(Boolean(providers?.google));
+      })
+      .catch(() => setGoogleEnabled(false));
+  }, []);
+
+  useEffect(() => {
+    if (!authError) return;
+    setError(errorMessages[authError] || errorMessages.Default);
+  }, [authError]);
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -51,6 +76,12 @@ function SignInForm() {
 
     router.push(result?.url || callbackUrl);
     router.refresh();
+  };
+
+  const onGoogleSignIn = async () => {
+    setError("");
+    setGoogleLoading(true);
+    await signIn("google", { callbackUrl });
   };
 
   return (
@@ -77,6 +108,31 @@ function SignInForm() {
             </Callout.Icon>
             <Callout.Text>{error}</Callout.Text>
           </Callout.Root>
+        )}
+
+        {googleEnabled && (
+          <>
+            <Button
+              type="button"
+              size="3"
+              variant="outline"
+              disabled={googleLoading || loading}
+              onClick={onGoogleSignIn}
+            >
+              <Flex align="center" gap="2">
+                <FcGoogle size={18} />
+                {googleLoading ? "Redirecting to Google..." : "Continue with Google"}
+              </Flex>
+            </Button>
+
+            <Flex align="center" gap="3">
+              <Box className="h-px flex-1 bg-[var(--gray-5)]" />
+              <Text size="1" color="gray">
+                or
+              </Text>
+              <Box className="h-px flex-1 bg-[var(--gray-5)]" />
+            </Flex>
+          </>
         )}
 
         <form onSubmit={onSubmit}>
@@ -115,18 +171,21 @@ function SignInForm() {
               </TextField.Root>
             </label>
 
-            <Button type="submit" size="3" disabled={loading}>
-              {loading ? "Signing in..." : "Sign in"}
+            <Button type="submit" size="3" disabled={loading || googleLoading}>
+              {loading ? "Signing in..." : "Sign in with email"}
             </Button>
           </Flex>
         </form>
 
-        <Box className="rounded-md bg-[var(--gray-2)] p-3">
-          <Text size="1" color="gray">
-            Demo account: <strong>admin@issue-tracker.dev</strong> /{" "}
-            <strong>password123</strong>
-          </Text>
-        </Box>
+        {!googleEnabled && (
+          <Box className="rounded-md bg-amber-50 border border-amber-200 p-3">
+            <Text size="1" className="text-amber-900">
+              Google sign-in is not configured yet. Add{" "}
+              <strong>GOOGLE_CLIENT_ID</strong> and{" "}
+              <strong>GOOGLE_CLIENT_SECRET</strong> to enable it.
+            </Text>
+          </Box>
+        )}
 
         <Text size="2" color="gray" align="center">
           <Link href="/" className="text-[var(--accent-11)] hover:underline">
@@ -140,11 +199,7 @@ function SignInForm() {
 
 export default function SignInPage() {
   return (
-    <Flex
-      align="center"
-      justify="center"
-      className="min-h-[70vh] py-8"
-    >
+    <Flex align="center" justify="center" className="min-h-[70vh] py-8">
       <Suspense
         fallback={
           <Card size="3" className="w-full max-w-md">

@@ -5,6 +5,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 
+const googleConfigured = Boolean(
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+);
+
 const providers: NextAuthOptions["providers"] = [
   CredentialsProvider({
     id: "credentials",
@@ -45,31 +49,29 @@ const providers: NextAuthOptions["providers"] = [
   }),
 ];
 
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-  providers.push(
+if (googleConfigured) {
+  providers.unshift(
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true,
     })
   );
 }
 
 const authOptions: NextAuthOptions = {
-  // JWT sessions don't need the adapter at request time; keep OAuth user
-  // linking available only when Google is configured.
-  ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-    ? { adapter: PrismaAdapter(prisma) }
-    : {}),
+  ...(googleConfigured ? { adapter: PrismaAdapter(prisma) } : {}),
   providers,
   session: {
     strategy: "jwt",
   },
   pages: {
     signIn: "/auth/signin",
+    error: "/auth/signin",
   },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
+      if (user?.id) {
         token.id = user.id;
       }
       return token;
@@ -81,6 +83,7 @@ const authOptions: NextAuthOptions = {
       return session;
     },
   },
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
 export default authOptions;
